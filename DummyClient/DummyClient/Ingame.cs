@@ -10,12 +10,14 @@ namespace DummyClient
 {
     partial class Program
     {
-        public static void SendJoinQueue()
+        public static void SendJoinGame()
         {
-            Console.WriteLine(currentPlayerId);
-            var packet = new JoinQueue() { senderId = currentPlayerId };
+            var packet = new JoinGame()
+            {
+                matchToken = matchToken
+            };
 
-            SendPacket(wsMatchMaking, packet);
+            SendPacket(wsGame, packet);
         }
     }
 }

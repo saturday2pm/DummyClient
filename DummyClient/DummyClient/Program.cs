@@ -11,8 +11,11 @@ namespace DummyClient
 {
     partial class Program
     {
-        static WebSocket ws { get; set; }
+        static WebSocket wsMatchMaking { get; set; }
+        static WebSocket wsGame { get; set; }
         static int currentPlayerId { get; set; }
+
+        static string matchToken { get; set; }
 
         static void Main(string[] args)
         {
@@ -21,34 +24,41 @@ namespace DummyClient
             Console.WriteLine("DummyClient");
             Console.Title = "DummyClient - " + currentPlayerId.ToString();
 
-            ws = new WebSocket("ws://localhost/mmaker?version=1.0.0");
-            
+            wsMatchMaking = new WebSocket("ws://localhost/mmaker?version=1.0.0");
+            wsGame = new WebSocket("ws://localhost/game?version=1.0.0");
 
-            ws.ConnectAsync();
+            wsMatchMaking.ConnectAsync();
+            wsGame.ConnectAsync();
 
-            ws.OnOpen += Ws_OnOpen;
-            ws.OnMessage += Ws_OnMessage;
-            ws.OnClose += Ws_OnClose;
+            wsMatchMaking.OnOpen += Ws_OnOpen;
+            wsMatchMaking.OnMessage += Ws_OnMessage;
+            wsMatchMaking.OnClose += Ws_OnClose;
+            wsGame.OnOpen += Ws_OnOpen;
+            wsGame.OnMessage += Ws_OnMessage;
+            wsGame.OnClose += Ws_OnClose;
 
-            while (ws.ReadyState != WebSocketState.Open)
+            while (wsMatchMaking.ReadyState != WebSocketState.Open)
                 ;
-            
+            while (wsGame.ReadyState != WebSocketState.Open)
+                ;
+
             while (true)
             {
-                Console.ReadKey();
+                var ch = Console.ReadLine();
 
-                SendJoinQueue();
+                if (ch == "join") SendJoinQueue();
+                if (ch == "joinGame") SendJoinGame();
             }
 
             Console.Read();
         }
 
-        static void SendPacket(PacketBase packet)
+        static void SendPacket(WebSocket target, PacketBase packet)
         {
             var json = Serializer.ToJson(packet);
 
             Console.WriteLine("Send : " + json);
-            ws.Send(json);
+            target.Send(json);
         }
 
         private static void Ws_OnOpen(object sender, EventArgs e)
@@ -68,6 +78,12 @@ namespace DummyClient
             var packet = Serializer.ToObject(e.Data);
 
             Console.WriteLine($"  Packet : {packet.GetType()}");
+
+            if (packet is MatchSuccess)
+            {
+                var matchSuccess = (MatchSuccess)packet;
+                matchToken = matchSuccess.matchToken;
+            }
         }
     }
 }
