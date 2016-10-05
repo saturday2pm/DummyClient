@@ -7,10 +7,17 @@ using System.Threading.Tasks;
 using ProtocolCS;
 using WebSocketSharp;
 
+using Amazon;
+using Amazon.GameLift;
+using Amazon.GameLift.Model;
+
 namespace DummyClient
 {
     partial class Program
     {
+        static readonly string FleetId = "fleet-b8ba7e16-e068-4773-a831-9bfa7fd1cf9d";
+        static readonly RegionEndpoint Region = RegionEndpoint.USEast1;
+
         static WebSocket wsMatchMaking { get; set; }
         static WebSocket wsGame { get; set; }
         static int currentPlayerId { get; set; }
@@ -21,11 +28,39 @@ namespace DummyClient
         {
             Serializer.senderId = currentPlayerId = new Random().Next(10000);
 
-            Console.WriteLine("DummyClient");
+            var gamelift = new AmazonGameLiftClient(Region);
+
+            Console.WriteLine($"[CLIENT]");
+            Console.WriteLine($"   PLAYER-ID : {currentPlayerId}");
+
+            Console.WriteLine($"[GAMELIFT]");
+            Console.WriteLine($"   REGION : {gamelift.Config.RegionEndpoint}");
+            Console.WriteLine($"   FLEET-ID : {FleetId}");
+            Console.WriteLine();
+
+            Console.WriteLine($"Prepare GameLift Service....");
+            Console.WriteLine($"Create GameSession....");
+            var gameSession = gamelift.CreateGameSession(new CreateGameSessionRequest()
+            {
+                FleetId = FleetId,
+                MaximumPlayerSessionCount = 2,
+                Name = "TEST_SESSION"
+            });
+            Console.WriteLine($"   SESSION-ID : {gameSession.GameSession.GameSessionId}");
+            Console.WriteLine($"   IP-ADDR : {gameSession.GameSession.IpAddress}");
+            Console.WriteLine($"   PORT : {gameSession.GameSession.Port}");
+
+            Console.WriteLine($"CreatePlayerSession....");
+            var playerSession = gamelift.CreatePlayerSession(
+                gameSession.GameSession.GameSessionId,
+                currentPlayerId.ToString());
+            Console.WriteLine($"   SESSION-ID : {playerSession.PlayerSession.PlayerSessionId}");
+            Console.WriteLine($"   STATUS : {playerSession.PlayerSession.Status}");
+
             Console.Title = "DummyClient - " + currentPlayerId.ToString();
 
-            wsMatchMaking = new WebSocket("ws://localhost/mmaker?version=1.0.0");
-            wsGame = new WebSocket("ws://localhost/game?version=1.0.0");
+            wsMatchMaking = new WebSocket("ws://localhost:9916/mmaker?version=1.0.0");
+            wsGame = new WebSocket("ws://localhost:9916/game?version=1.0.0");
 
             wsMatchMaking.ConnectAsync();
             wsGame.ConnectAsync();
