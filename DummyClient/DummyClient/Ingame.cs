@@ -19,5 +19,15 @@ namespace DummyClient
 
             SendPacket(wsGame, packet);
         }
+
+        public static void SendEmptyFrame()
+        {
+            var packet = new Frame()
+            {
+                events = new IngameEvent[] { }
+            };
+
+            SendPacket(wsGame, packet);
+        }
     }
 }

@@ -17,6 +17,9 @@ namespace DummyClient
 
         static string matchToken { get; set; }
 
+        static bool processGame { get; set; }
+        static bool frameReceived { get; set; }
+
         static void Main(string[] args)
         {
             Serializer.senderId = currentPlayerId = new Random().Next(10000);
@@ -42,12 +45,20 @@ namespace DummyClient
             while (wsGame.ReadyState != WebSocketState.Open)
                 ;
 
+            SendJoinQueue();
+
             while (true)
             {
                 var ch = Console.ReadLine();
 
                 if (ch == "join") SendJoinQueue();
                 if (ch == "joinGame") SendJoinGame();
+
+                if (processGame && frameReceived)
+                {
+                    SendEmptyFrame();
+                    frameReceived = false;
+                }
             }
 
             Console.Read();
@@ -83,6 +94,31 @@ namespace DummyClient
             {
                 var matchSuccess = (MatchSuccess)packet;
                 matchToken = matchSuccess.matchToken;
+
+                SendJoinGame();
+            }
+            if (packet is StartGame)
+            {
+                var startGame = (StartGame)packet;
+
+                Console.WriteLine("StartGae");
+                Console.WriteLine("  - Players : " + startGame.players.Length.ToString());
+
+                foreach (var player in startGame.players)
+                    Console.WriteLine("    " + player.id);
+
+                processGame = true;
+                frameReceived = true;
+
+                SendEmptyFrame();
+            }
+            if (packet is Frame)
+            {
+                var frame = (Frame)packet;
+
+                frameReceived = true;
+
+                SendEmptyFrame();
             }
         }
     }
