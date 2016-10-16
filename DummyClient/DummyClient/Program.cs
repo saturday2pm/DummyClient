@@ -24,8 +24,8 @@ namespace DummyClient
             Console.WriteLine("DummyClient");
             Console.Title = "DummyClient - " + currentPlayerId.ToString();
 
-            wsMatchMaking = new WebSocket("ws://localhost/mmaker?version=1.0.0");
-            wsGame = new WebSocket("ws://localhost/game?version=1.0.0");
+            wsMatchMaking = new WebSocket("ws://localhost:9916/mmaker?version=1.0.0");
+            wsGame = new WebSocket("ws://localhost:9916/game?version=1.0.0");
 
             wsMatchMaking.ConnectAsync();
             wsGame.ConnectAsync();
